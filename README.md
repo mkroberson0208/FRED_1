@@ -25,3 +25,57 @@ Interest rates represent the **cost of money** - how expensive borrowing for deb
 For this reason low interest rates are referred to as "expansionary" monetary policy 
 
 Cheapening credit has the effect of taking pressure off of profits in real economic terms. The "hurdle rate" of productivity declines with the nominal cost of capital. It additionally can . 
+
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Nov 14 09:12:11 2021
+
+@author: Michael
+"""
+
+import os
+import numpy as np
+import pandas as pd
+import requests
+import time
+
+MY_API = '499659ea0d975475c7302585ae1c6d7a'
+
+i = 'CSUSHPISA'
+
+i = 'NASDAQCOM'
+
+args_url = {'series_id':i,'api_key':MY_API,'file_type':'json'}
+req = requests.get('https://api.stlouisfed.org/fred/series/observations',params=args_url)
+data = req.json()
+df = pd.DataFrame.from_dict(data['observations'])
+df['value'] = df['value'].replace({'.':'0'}).astype(float)
+df['value'] = df['value'].replace(0,np.nan)
+df.index = pd.to_datetime(df['date'])
+df['1Y_return'] = df['value']/df['value'].shift(12) - 1
+df['1M_return'] = df['value']/df['value'].shift(1) - 1
+df['avg'] = df['1M_return'].mean()
+df['above_avg'] = df['1M_return'] > df['1M_return'].mean()
+
+
+import plotly.express as px
+fig = px.line(df['value'].dropna(),log_y=True)
+fig.show()
+
+
+
+import plotly.express as px
+fig = px.line(df['1Y_return'].dropna())
+fig.show()
+
+import plotly.express as px
+fig = px.line(df['1M_return'].dropna())
+fig.show()
+
+import plotly.express as px
+fig = px.line((np.log(df['value'])-np.log(df['value']).shift(1)).dropna())
+fig.show()
+
+
+fig.write_html("FedFunds.html",auto_open=True)
+
